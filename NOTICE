@@ -1,0 +1,14 @@
+strands-calendar-agent
+Copyright 2026 Shashank Chinchli
+
+This project is derived from the "02-custom-tools" TypeScript sample in
+https://github.com/strands-agents/samples, which carries the following notice:
+
+  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+Both are licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Changes from the original sample: the dependency moved to the published
+@strands-agents/sdk package; appointments gained a duration and overlap checks;
+new check_availability and delete_appointment tools; a turn-by-turn chat with a
+guided demo; configurable settings (config.ts); and tests.

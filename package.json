@@ -1,0 +1,31 @@
+{
+  "name": "strands-calendar-agent",
+  "version": "1.0.0",
+  "description": "A turn-by-turn calendar assistant built with Strands Agents (TypeScript) on Amazon Bedrock. Custom tools, SQLite, and clash handling that never double-books.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "https://github.com/schinchli/strands-calendar-agent.git" },
+  "keywords": ["strands-agents", "ai-agent", "amazon-bedrock", "typescript", "tool-use", "sqlite"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "setup": "tsx src/index.ts --setup",
+    "chat": "tsx src/index.ts --chat",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "clean": "rm -rf dist *.db"
+  },
+  "dependencies": {
+    "@strands-agents/sdk": "^1.19.0",
+    "better-sqlite3": "^13.0.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.0.0"
+  }
+}
