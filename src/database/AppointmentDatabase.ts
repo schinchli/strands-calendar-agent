@@ -162,7 +162,7 @@ export class AppointmentDatabase {
    * Find appointments that overlap [date, date + durationMinutes).
    * Pass ignoreId to skip the appointment being rescheduled.
    */
-  findConflicts(date: string, durationMinutes: number, ignoreId?: string): Appointment[] {
+  findConflicts(date: string, durationMinutes: number, ignoreId?: string, bufferMinutes = 0): Appointment[] {
     const start = toMinutes(date);
     if (start === undefined) return [];
     const end = start + durationMinutes;
@@ -172,7 +172,9 @@ export class AppointmentDatabase {
       const aStart = toMinutes(a.date);
       if (aStart === undefined) return false;
       const aEnd = aStart + (a.duration_minutes || DEFAULT_DURATION_MINUTES);
-      return start < aEnd && aStart < end;
+      // The buffer keeps a gap after each meeting: the new one may not start until aEnd + buffer,
+      // and must end at least `buffer` minutes before an existing one starts.
+      return start < aEnd + bufferMinutes && aStart < end + bufferMinutes;
     });
   }
 
@@ -180,14 +182,14 @@ export class AppointmentDatabase {
    * Open slots of durationMinutes on the given day (YYYY-MM-DD), on the hour
    * and half hour, between workday start and end hours.
    */
-  freeSlots(day: string, durationMinutes: number = DEFAULT_DURATION_MINUTES, startHour = 9, endHour = 18): string[] {
+  freeSlots(day: string, durationMinutes: number = DEFAULT_DURATION_MINUTES, startHour = 9, endHour = 18, bufferMinutes = 0): string[] {
     const dayStart = toMinutes(`${day} ${String(startHour).padStart(2, "0")}:00`);
     const dayEnd = toMinutes(`${day} ${String(endHour).padStart(2, "0")}:00`);
     if (dayStart === undefined || dayEnd === undefined) return [];
 
     const slots: string[] = [];
     for (let t = dayStart; t + durationMinutes <= dayEnd; t += 30) {
-      if (this.findConflicts(fromMinutes(t), durationMinutes).length === 0) {
+      if (this.findConflicts(fromMinutes(t), durationMinutes, undefined, bufferMinutes).length === 0) {
         slots.push(fromMinutes(t).slice(11));
       }
     }

@@ -26,7 +26,7 @@ Other ways to start:
 ```bash
 npm run setup      # choose model, region, time zone and more; saved to assistant.config.json
 npm run chat       # chat from the first turn
-npm test           # 9 tests of the calendar rules and settings; no AWS needed
+npm test           # 12 tests of the calendar rules and settings; no AWS needed
 ```
 
 Try these in the chat, in order:
@@ -121,6 +121,7 @@ To swap SQLite for a real calendar (Google Calendar, Outlook, your own API), rep
 | Time zone | `--timezone` | `ASSISTANT_TIMEZONE` | your system time zone |
 | Fixed "now" for demos, `YYYY-MM-DD HH:MM` | `--now` | `ASSISTANT_NOW` | the real clock |
 | Default meeting length, minutes | `--duration` | `ASSISTANT_DURATION` | `60` |
+| Minutes kept free after each meeting (0 = back-to-back) | `--buffer` | `ASSISTANT_BUFFER` | `0` |
 | Working hours | `--workday` | `ASSISTANT_WORKDAY` | `09-18` |
 
 Priority: flag, then environment variable, then `assistant.config.json` (git-ignored), then default. In the chat, `/config` shows each value and its source, `/set <setting> <value>` changes one without losing the conversation, and `/save` stores it. Run `npm run dev -- --help` for everything.

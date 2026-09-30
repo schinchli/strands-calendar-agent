@@ -52,6 +52,7 @@ const { values: args } = parseArgs({
     timezone: { type: "string" },
     now: { type: "string" },
     duration: { type: "string" },
+    buffer: { type: "string" },
     workday: { type: "string" },
     config: { type: "string", default: "assistant.config.json" },
     setup: { type: "boolean", default: false },
@@ -68,6 +69,7 @@ const SETTING_HELP: Record<keyof Settings, string> = {
   timezone: "IANA time zone used for \"today\" and \"tomorrow\"",
   now: "fixed date and time YYYY-MM-DD HH:MM, for rehearsing a demo (empty = real clock)",
   duration: "default appointment length in minutes",
+  buffer: "minutes kept free after each appointment, 0-120",
   workday: "working hours for free-slot suggestions, start-end (24h)",
 };
 
@@ -114,7 +116,7 @@ function systemPromptFor(s: Settings): string {
   const { start, end } = parseWorkday(s.workday)!;
   return `You are a helpful personal assistant that specializes in managing my appointments and calendar. You have access to appointment management tools to help me organize my schedule effectively. Always provide the appointment id so that I can update it if required.
 
-${nowContext(s)} Appointments last ${s.duration} minutes unless I say otherwise; use that default without asking. My working hours are ${String(start).padStart(2, "0")}:00 to ${String(end).padStart(2, "0")}:00. A title, a time and a location are enough to book; the description is optional.
+${nowContext(s)} Appointments last ${s.duration} minutes unless I say otherwise; use that default without asking.${s.buffer ? ` I need ${s.buffer} minutes free after every appointment; the tools enforce this, so a slot that ends too close to the next meeting counts as busy.` : ""} My working hours are ${String(start).padStart(2, "0")}:00 to ${String(end).padStart(2, "0")}:00. A title, a time and a location are enough to book; the description is optional.
 
 Always use the tools to check the calendar; never decide from memory that a time is free or busy. When a tool returns status "conflict", the calendar is busy and nothing was saved: tell me which appointment clashes, offer the suggested_start_times from that result, and ask me how to proceed. Only ever propose times that a tool returned as free; never work out other times yourself. Never double-book, and never pick an alternative time on my behalf. If details you need are missing, ask for them instead of inventing them. Confirm with me before cancelling an appointment.`;
 }
@@ -152,6 +154,7 @@ function buildSession(settings: Settings, sources: ResolvedSettings["sources"], 
 
   const tools = new AppointmentTools(database, {
     defaultDurationMinutes: settings.duration,
+    bufferMinutes: settings.buffer,
     workdayStartHour: start,
     workdayEndHour: end,
   }).getAllTools();
@@ -223,6 +226,7 @@ async function runSetup(resolved: ResolvedSettings): Promise<Settings | undefine
     ["timezone", "Time zone"],
     ["now", "Fixed date and time for a demo, YYYY-MM-DD HH:MM (type 'clock' for the real clock)", (r) => (r === "clock" ? "" : r)],
     ["duration", "Default appointment length in minutes", (r) => Number(r)],
+    ["buffer", "Minutes to keep free after each appointment (0 for back-to-back)", (r) => Number(r)],
     ["workday", "Working hours, start-end"],
   ];
   for (const [key, question, parse] of steps) {
@@ -254,7 +258,7 @@ async function chat(session: Session, configPath: string): Promise<Session> {
         continue;
       }
       const k = key as keyof Settings;
-      const value = k === "duration" ? Number(raw) : k === "now" && raw === "clock" ? "" : raw;
+      const value = k === "duration" || k === "buffer" ? Number(raw) : k === "now" && raw === "clock" ? "" : raw;
       const candidate = { ...session.settings, [k]: value } as Settings;
       const problems = validateSettings(candidate);
       if (problems.length) {

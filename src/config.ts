@@ -22,6 +22,8 @@ export interface Settings {
   now: string;
   /** Length of an appointment when none is given, in minutes */
   duration: number;
+  /** Minutes kept free after each appointment, e.g. for travel; 0 allows back-to-back meetings */
+  buffer: number;
   /** Working hours for free-slot suggestions, as HH-HH (24-hour) */
   workday: string;
 }
@@ -41,6 +43,7 @@ export const DEFAULTS: Settings = {
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   now: "",
   duration: 60,
+  buffer: 0,
   workday: "09-18",
 };
 
@@ -52,6 +55,7 @@ export const ENV_VARS: Record<keyof Settings, string> = {
   timezone: "ASSISTANT_TIMEZONE",
   now: "ASSISTANT_NOW",
   duration: "ASSISTANT_DURATION",
+  buffer: "ASSISTANT_BUFFER",
   workday: "ASSISTANT_WORKDAY",
 };
 
@@ -64,7 +68,7 @@ export const MODEL_CHOICES = [
 const KEYS = Object.keys(DEFAULTS) as (keyof Settings)[];
 
 function coerce(key: keyof Settings, raw: unknown): Settings[keyof Settings] {
-  return key === "duration" ? Number(raw) : String(raw ?? "").trim();
+  return key === "duration" || key === "buffer" ? Number(raw) : String(raw ?? "").trim();
 }
 
 export function resolveSettings(flags: Partial<Record<keyof Settings, string>>, configPath: string): ResolvedSettings {
@@ -118,6 +122,7 @@ export function validateSettings(s: Settings): string[] {
   }
   if (s.now && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s.now)) problems.push(`now "${s.now}" must be YYYY-MM-DD HH:MM, or empty for the real clock`);
   if (!Number.isInteger(s.duration) || s.duration < 5 || s.duration > 24 * 60) problems.push(`duration "${s.duration}" must be a whole number of minutes between 5 and 1440`);
+  if (!Number.isInteger(s.buffer) || s.buffer < 0 || s.buffer > 120) problems.push(`buffer "${s.buffer}" must be a whole number of minutes between 0 and 120`);
   if (!parseWorkday(s.workday)) problems.push(`workday "${s.workday}" must be start-end hours, e.g. 09-18`);
   return problems;
 }

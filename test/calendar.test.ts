@@ -73,3 +73,27 @@ test("invalid settings are rejected with a reason", () => {
   assert.equal(problems.length, 4);
   assert.deepEqual(validateSettings(DEFAULTS), []);
 });
+
+test("a buffer keeps a gap after each meeting", () => {
+  const { db } = calendarWith3pmMeeting();
+  assert.equal(db.findConflicts("2026-10-07 16:00", 60, undefined, 15).length, 1, "16:00 is inside the 15-minute buffer");
+  assert.equal(db.findConflicts("2026-10-07 16:15", 60, undefined, 15).length, 0, "16:15 is clear of it");
+  assert.equal(db.findConflicts("2026-10-07 14:00", 60, undefined, 15).length, 1, "ending at 15:00 leaves no gap before 15:00");
+  assert.equal(db.findConflicts("2026-10-07 13:45", 60, undefined, 15).length, 0, "ending at 14:45 leaves 15 minutes");
+});
+
+test("free slots and suggestions respect the buffer", () => {
+  const { db } = calendarWith3pmMeeting();
+  const slots = db.freeSlots("2026-10-07", 60, 9, 18, 15);
+  assert.ok(!slots.includes("14:00") && !slots.includes("16:00"), "no slot touches the busy hour");
+  assert.ok(slots.includes("13:30") && slots.includes("16:30"));
+  const tools = new AppointmentTools(db, { ...DEFAULT_SCHEDULING, bufferMinutes: 15 }) as any;
+  const report = JSON.parse(tools.conflictResult("2026-10-07 15:00", 60));
+  assert.deepEqual(report.suggested_start_times, ["13:00", "13:30", "16:30"]);
+});
+
+test("buffer is validated and defaults to back-to-back", () => {
+  assert.equal(DEFAULTS.buffer, 0);
+  assert.equal(validateSettings({ ...DEFAULTS, buffer: 15 }).length, 0);
+  assert.match(validateSettings({ ...DEFAULTS, buffer: 500 })[0], /buffer "500" must be/);
+});

@@ -27,6 +27,8 @@ export interface SchedulingOptions {
   /** First and last hour of the working day, used for free-slot suggestions */
   workdayStartHour: number;
   workdayEndHour: number;
+  /** Minutes kept free after each appointment */
+  bufferMinutes?: number;
 }
 
 export const DEFAULT_SCHEDULING: SchedulingOptions = {
@@ -62,8 +64,8 @@ export class AppointmentTools {
   }
 
   private freeSlots(day: string, durationMinutes: number): string[] {
-    const { workdayStartHour, workdayEndHour } = this.scheduling;
-    return this.database.freeSlots(day, durationMinutes, workdayStartHour, workdayEndHour);
+    const { workdayStartHour, workdayEndHour, bufferMinutes = 0 } = this.scheduling;
+    return this.database.freeSlots(day, durationMinutes, workdayStartHour, workdayEndHour, bufferMinutes);
   }
 
   /**
@@ -71,7 +73,7 @@ export class AppointmentTools {
    * The agent must then ask the user what to do rather than choosing for them.
    */
   private conflictResult(date: string, durationMinutes: number, ignoreId?: string) {
-    const conflicts = this.database.findConflicts(date, durationMinutes, ignoreId);
+    const conflicts = this.database.findConflicts(date, durationMinutes, ignoreId, this.scheduling.bufferMinutes ?? 0);
     if (conflicts.length === 0) return undefined;
     return JSON.stringify(
       {
